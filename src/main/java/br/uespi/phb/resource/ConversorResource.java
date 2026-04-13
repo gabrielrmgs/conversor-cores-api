@@ -1,6 +1,9 @@
 package br.uespi.phb.resource;
 
+import br.uespi.phb.dto.Cmyk;
 import br.uespi.phb.dto.CorResponse;
+import br.uespi.phb.dto.Hsl;
+import br.uespi.phb.dto.Hsv;
 import br.uespi.phb.dto.Rgb;
 import br.uespi.phb.service.ConversorService;
 import jakarta.inject.Inject;
@@ -19,13 +22,35 @@ import jakarta.ws.rs.core.Response.Status;
 public class ConversorResource {
 
 
-    @Inject
     private ConversorService conversorService;
+
+    @Inject
+    public ConversorResource(ConversorService conversorService) {
+        this.conversorService = conversorService;
+    }
 
     @POST
     @Path("/rgb")
     public CorResponse converterAPartirDeRgb(Rgb rgb) {
         return conversorService.converterCoresAPartirDeRgb(rgb);
+    }
+
+    @POST
+    @Path("/cmyk")
+    public CorResponse converterAPartirDeCmyk(Cmyk cmyk) {
+        return conversorService.converterCoresAPartirDeCmyk(cmyk);
+    }
+
+    @POST
+    @Path("/hsv")
+    public CorResponse converterAPartirDeHsv(Hsv hsv){
+        return conversorService.converterCoresAPartirDeHsv(hsv);
+    }
+
+    @POST
+    @Path("/hsl")
+    public CorResponse converterAPartirDeHsl(Hsl hsl) {
+        return conversorService.converterCoresAPartirDeHsl(hsl);
     }
 
 }
