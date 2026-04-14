@@ -19,7 +19,10 @@ public class ConversorService {
 
     public CorResponse converterCoresAPartirDeCmyk(Cmyk cmyk) {
         Rgb rgb = cmykParaRgb(cmyk);
-        return converterCoresAPartirDeRgb(rgb);
+        Hsv hsv = rgbParaHsv(rgb);
+        Hsl hsl = rgpParaHsl(rgb);
+
+        return new CorResponse(rgb, cmyk, hsv, hsl);
     }
 
     public CorResponse converterCoresAPartirDeHsl(Hsl hsl) {
@@ -41,11 +44,18 @@ public class ConversorService {
         if (k == 1.0)
             return new Cmyk(0, 0, 0, 1);
 
-        double c = Math.round((1.0 - rNormalizado - k) / (1.0 - k) * 100.0) / 100.0;
-        double m = Math.round((1.0 - gNormalizado - k) / (1.0 - k) * 100.0) / 100.0;
-        double y = Math.round((1.0 - bNormalizado - k) / (1.0 - k) * 100.0) / 100.0;
-        k = Math.round(k * 100.0) / 100.0;
-        return new Cmyk(c, m, y, k);
+        double c = (1.0 - rNormalizado - k) / (1.0 - k);
+        double m = (1.0 - gNormalizado - k) / (1.0 - k);
+        double y = (1.0 - bNormalizado - k) / (1.0 - k);
+        return new Cmyk(
+                round(c),
+                round(m),
+                round(y),
+                round(k));
+    }
+
+    private double round(double value) {
+        return Math.round(value * 100.0) / 100.0;
     }
 
     private Hsv rgbParaHsv(Rgb rgb) {

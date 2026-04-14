@@ -1,0 +1,1812 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cromatick — Conversor de Cores</title>
+  <meta name="description"
+    content="Converta cores entre RGB, CMYK, HSL e HSV em tempo real. O conversor de cores mais elegante da web." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&display=swap"
+    rel="stylesheet" />
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --bg: #080808;
+      --surface: #111;
+      --surface2: #181818;
+      --surface3: #202020;
+      --border: rgba(255, 255, 255, 0.06);
+      --border-md: rgba(255, 255, 255, 0.12);
+      --border-hi: rgba(255, 255, 255, 0.22);
+      --text: #f2ede6;
+      --text-muted: #666;
+      --text-dim: #333;
+      --accent: #f2ede6;
+      --r: 29;
+      --g: 158;
+      --b: 117;
+      --color: rgb(var(--r), var(--g), var(--b));
+      --font-display: 'Bebas Neue', sans-serif;
+      --font-mono: 'DM Mono', monospace;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-mono);
+      overflow-x: hidden;
+      cursor: default;
+    }
+
+    /* ── Animated background ── */
+    .bg-layer {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+
+    .bg-orb {
+      position: absolute;
+      width: 420px;
+      height: 420px;
+      top: -120px;
+      left: -120px;
+
+      background: radial-gradient(circle,
+          rgba(255, 0, 60, 0.35) 0%,
+          rgba(255, 0, 60, 0.18) 40%,
+          transparent 70%);
+
+      filter: blur(60px);
+      opacity: 0.3;
+
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .bg-orb-1 {
+      width: 600px;
+      height: 600px;
+      top: -200px;
+      left: -200px;
+      background: rgb(var(--r), var(--g), var(--b));
+      animation: orbFloat1 18s ease-in-out infinite;
+    }
+
+    .bg-orb-2 {
+      width: 400px;
+      height: 400px;
+      bottom: -100px;
+      right: -100px;
+      background: rgb(var(--r), var(--g), var(--b));
+      opacity: 0.07;
+      animation: orbFloat2 22s ease-in-out infinite;
+    }
+
+    @keyframes orbFloat1 {
+
+      0%,
+      100% {
+        transform: translate(0, 0) scale(1);
+      }
+
+      33% {
+        transform: translate(60px, 40px) scale(1.05);
+      }
+
+      66% {
+        transform: translate(-30px, 70px) scale(0.95);
+      }
+    }
+
+    @keyframes orbFloat2 {
+
+      0%,
+      100% {
+        transform: translate(0, 0);
+      }
+
+      50% {
+        transform: translate(-50px, -40px) scale(1.1);
+      }
+    }
+
+    /* grain */
+    .bg-grain {
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 1;
+      opacity: 0.8;
+    }
+
+    /* ── Layout ── */
+    .wrapper {
+      position: relative;
+      z-index: 2;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Header ── */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 28px 48px;
+      border-bottom: 1px solid var(--border);
+      animation: slideDown 0.6s ease both;
+    }
+
+    .logo-wrap {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .logo {
+      font-family: var(--font-display);
+      font-size: 36px;
+      letter-spacing: 3px;
+      color: var(--text);
+      line-height: 1;
+    }
+
+    .logo-divider {
+      width: 1px;
+      height: 24px;
+      background: var(--border-md);
+      flex-shrink: 0;
+    }
+
+    .logo-sub {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .logo-sub-top {
+      font-size: 9px;
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      line-height: 1;
+    }
+
+    .logo-sub-bottom {
+      font-size: 11px;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+      line-height: 1;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .badge-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--color);
+      transition: background 0.4s ease;
+      flex-shrink: 0;
+    }
+
+    .header-right {
+      font-size: 10px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--text-dim);
+    }
+
+    /* ── Hero ── */
+    .hero {
+      padding: 60px 48px 40px;
+      animation: fadeUp 0.7s ease 0.1s both;
+    }
+
+    .hero-title {
+      font-family: var(--font-display);
+      font-size: clamp(72px, 12vw, 140px);
+      line-height: 0.88;
+      letter-spacing: 2px;
+      color: var(--text);
+      position: relative;
+      display: inline-block;
+    }
+
+    .hero-title .color-word {
+      position: relative;
+      color: rgba(255, 255, 255, 0.04);
+      /* bem mais apagado */
+      -webkit-text-stroke: 1px rgba(255, 255, 255, 0.12);
+    }
+
+    /* camada principal (cor viva) */
+    .hero-title .color-word::after {
+      content: attr(data-text);
+      position: absolute;
+      left: 0;
+      top: 0;
+
+      color: var(--color);
+      opacity: 1;
+
+      /* MAIS contraste */
+      filter: brightness(1.4) saturate(1.3);
+
+      /* sombra leve pra destacar */
+      text-shadow: 0 0 12px rgba(0, 0, 0, 0.6);
+
+      clip-path: inset(0 var(--clip-right, 0%) 0 0);
+      transition: clip-path 0.5s ease, color 0.4s ease;
+    }
+
+    /* mobile: remove efeito complexo */
+    @media (max-width: 768px) {
+      .hero-title .color-word {
+        color: var(--color);
+        -webkit-text-stroke: 0;
+      }
+
+      .hero-title .color-word::after {
+        display: none;
+      }
+    }
+
+    .hero-title .color-word::after {
+      content: attr(data-text);
+      position: absolute;
+      left: 0;
+      top: 0;
+      color: var(--color);
+      -webkit-text-stroke: 0;
+      clip-path: inset(0 var(--clip-right, 100%) 0 0);
+      transition: clip-path 0.8s ease, color 0.8s ease;
+    }
+
+    .hero-sub {
+      margin-top: 20px;
+      font-size: 12px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .hero-sub::before {
+      content: '';
+      display: block;
+      width: 40px;
+      height: 1px;
+      background: var(--border-md);
+    }
+
+    /* ── Main content ── */
+    .content {
+      flex: 1;
+      padding: 0 48px 48px;
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 28px;
+      align-items: start;
+      animation: fadeUp 0.7s ease 0.2s both;
+    }
+
+    @media (max-width: 900px) {
+      header {
+        padding: 20px 24px;
+      }
+
+      .hero {
+        padding: 40px 24px 28px;
+      }
+
+      .content {
+        padding: 0 24px 40px;
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* ── Left: Preview ── */
+    .preview-col {
+      position: sticky;
+      top: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .swatch-container {
+      position: relative;
+      border-radius: 20px;
+      overflow: hidden;
+      border: 1px solid var(--border-md);
+    }
+
+    .swatch {
+      width: 100%;
+      aspect-ratio: 4/3;
+      background: var(--color);
+      transition: background 0.15s ease;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: 20px;
+    }
+
+    .swatch-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(160deg, rgba(255, 255, 255, 0.07) 0%, transparent 50%, rgba(0, 0, 0, 0.3) 100%);
+      pointer-events: none;
+    }
+
+    .swatch-grid {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+    }
+
+    .hex-big {
+      position: relative;
+      z-index: 2;
+      font-family: var(--font-display);
+      font-size: 42px;
+      letter-spacing: 3px;
+      color: rgba(255, 255, 255, 0.9);
+      text-shadow: 0 2px 20px rgba(0, 0, 0, 0.5);
+      line-height: 1;
+      transition: opacity 0.2s;
+    }
+
+    .hex-copy-row {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 6px;
+    }
+
+    .hex-label-small {
+      font-size: 10px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.4);
+    }
+
+    /* ── Color components strip ── */
+    .components-strip {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .component-chip {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 14px;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .component-chip::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 3px;
+      background: var(--color);
+      transition: background 0.4s;
+    }
+
+    .component-chip:hover {
+      border-color: var(--border-md);
+      background: var(--surface2);
+    }
+
+    .component-chip.active {
+      border-color: var(--border-hi);
+      background: var(--surface2);
+    }
+
+    .chip-mode {
+      font-size: 9px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    .chip-values {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+
+    .chip-val-item {
+      font-size: 11px;
+      color: var(--text);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .chip-val-key {
+      color: var(--text-dim);
+      font-size: 10px;
+    }
+
+    /* ── Right: Controls ── */
+    .controls-col {
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      margin-top: -90px;
+      gap: 9px;
+    }
+
+    @media (min-width: 1200px) {
+      .controls-col {
+        margin-top: -90px;
+      }
+    }
+
+    @media (max-width: 679px) {
+      .controls-col {
+        margin-top: 9px;
+      }
+    }
+
+    /* Mode tabs */
+    .mode-row {
+      display: flex;
+      gap: 6px;
+    }
+
+    .tab {
+      flex: 1;
+      padding: 12px 0;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      text-align: center;
+      border-radius: 10px;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text-muted);
+      transition: all 0.15s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .tab::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: var(--color);
+      transform: scaleX(0);
+      transition: transform 0.25s ease, background 0.4s;
+    }
+
+    .tab.active {
+      background: var(--surface2);
+      color: var(--text);
+      border-color: var(--border-hi);
+    }
+
+    .tab.active::after {
+      transform: scaleX(1);
+    }
+
+    .tab:hover:not(.active) {
+      background: var(--surface2);
+      color: var(--text-muted);
+      border-color: var(--border-md);
+    }
+
+    /* Sliders area */
+    .sliders-area {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .sliders-area::before {
+      content: attr(data-mode);
+      position: absolute;
+      right: 24px;
+      top: 20px;
+      font-family: var(--font-display);
+      font-size: 80px;
+      letter-spacing: 4px;
+      color: rgba(255, 255, 255, 0.02);
+      pointer-events: none;
+      line-height: 1;
+    }
+
+    .slider-group {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      position: relative;
+    }
+
+    .slider-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .sl-label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .sl-color-pip {
+      width: 8px;
+      height: 8px;
+      border-radius: 2px;
+      flex-shrink: 0;
+    }
+
+    .sl-name {
+      font-size: 10px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    .sl-val {
+      font-size: 22px;
+      font-weight: 500;
+      color: var(--text);
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -1px;
+      min-width: 56px;
+      text-align: right;
+      transition: color 0.1s;
+    }
+
+    .sl-range-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .sl-min,
+    .sl-max {
+      font-size: 9px;
+      color: var(--text-dim);
+      letter-spacing: 1px;
+      width: 28px;
+      flex-shrink: 0;
+    }
+
+    .sl-max {
+      text-align: right;
+    }
+
+    input[type=range] {
+      flex: 1;
+      -webkit-appearance: none;
+      appearance: none;
+      height: 3px;
+      border-radius: 2px;
+      outline: none;
+      cursor: pointer;
+      transition: height 0.15s;
+    }
+
+    input[type=range]:hover {
+      height: 5px;
+    }
+
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: var(--text);
+      border: 3px solid var(--bg);
+      cursor: pointer;
+      box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.15), 0 2px 8px rgba(0, 0, 0, 0.6);
+      transition: transform 0.12s, box-shadow 0.12s;
+    }
+
+    input[type=range]::-webkit-slider-thumb:hover {
+      transform: scale(1.25);
+      box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.3), 0 4px 16px rgba(0, 0, 0, 0.7);
+    }
+
+    input[type=range]:active::-webkit-slider-thumb {
+      transform: scale(1.1);
+    }
+
+    input[type=range]::-moz-range-thumb {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: var(--text);
+      border: 3px solid var(--bg);
+      cursor: pointer;
+    }
+
+    /* ────────────────────────────────────────────────
+   RESPONSIVIDADE COMPLETA (ADICIONADO)
+──────────────────────────────────────────────── */
+
+    /* Tablets médios */
+    @media (max-width: 1024px) {
+      .hero-title {
+        font-size: clamp(56px, 10vw, 100px);
+      }
+
+      .content {
+        grid-template-columns: 1fr;
+        gap: 24px;
+      }
+
+      .preview-col {
+        position: relative;
+        top: 0;
+      }
+    }
+
+    /* Tablets pequenos / celulares grandes */
+    @media (max-width: 768px) {
+      header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+      }
+
+      .header-right {
+        align-self: flex-end;
+      }
+
+      .hero-title {
+        font-size: clamp(42px, 12vw, 72px);
+        line-height: 1;
+      }
+
+      .hero-sub {
+        font-size: 10px;
+        gap: 10px;
+      }
+
+      .sliders-area {
+        padding: 20px;
+      }
+
+      .wrapper {
+        height: auto;
+        overflow: visible;
+      }
+
+      .results-panel {
+        max-height: none;
+      }
+
+      .results-body {
+        max-height: 300px;
+        overflow-y: auto;
+      }
+
+    }
+
+    /* Mobile */
+    @media (max-width: 480px) {
+      header {
+        padding: 16px;
+      }
+
+      .hero {
+        padding: 28px 16px 20px;
+      }
+
+      .content {
+        padding: 0 16px 24px;
+      }
+
+      .hero-title {
+        font-size: 36px;
+        letter-spacing: 1px;
+      }
+
+      .logo {
+        font-size: 28px;
+      }
+
+      .logo-sub-top {
+        font-size: 8px;
+      }
+
+      .logo-sub-bottom {
+        font-size: 10px;
+      }
+
+      .swatch {
+        padding: 14px;
+      }
+
+      .hex-big {
+        font-size: 28px;
+      }
+
+      .components-strip {
+        grid-template-columns: 1fr;
+      }
+
+      .mode-row {
+        flex-wrap: wrap;
+      }
+
+      .tab {
+        flex: 1 1 45%;
+        font-size: 10px;
+        padding: 10px 0;
+      }
+
+      .sl-val {
+        font-size: 18px;
+      }
+
+      .sliders-area::before {
+        font-size: 50px;
+      }
+
+      .results-body {
+        grid-template-columns: 1fr;
+      }
+
+      footer {
+        padding: 14px;
+        font-size: 9px;
+      }
+    }
+
+    /* Telas muito pequenas */
+    @media (max-width: 360px) {
+      .hero-title {
+        font-size: 30px;
+      }
+
+      .hex-big {
+        font-size: 24px;
+      }
+
+      .sl-val {
+        font-size: 16px;
+      }
+    }
+
+    /* ────────────────────────────────────────────────
+   FIT SCREEN (SEM SCROLL EM TELAS GRANDES)
+──────────────────────────────────────────────── */
+
+    /* Base: usar altura real da tela */
+    .wrapper {
+      display: flex;
+      flex-direction: column;
+      height: 100dvh;
+    }
+
+    /* conteúdo ocupa espaço real disponível */
+    .content {
+      flex: 1;
+      min-height: 0;
+    }
+
+    /* painel de resultados não estoura */
+    .results-panel {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    /* área scrollável REAL */
+    .results-body {
+      flex: 1;
+      overflow-y: auto;
+      padding-bottom: 10px;
+    }
+
+    /* Ajuste geral para caber melhor */
+    .hero {
+      padding: 40px 48px 20px;
+    }
+
+    /* Reduz espaços internos */
+    .sliders-area {
+      padding: 20px;
+      gap: 20px;
+    }
+
+    .slider-group {
+      gap: 6px;
+    }
+
+
+    /* Preview não crescer demais */
+    .swatch {
+      aspect-ratio: 4/2.5;
+    }
+
+    /* Header e footer mais compactos */
+    header {
+      padding: 20px 48px;
+    }
+
+    footer {
+      flex-shrink: 0;
+      position: relative;
+      /* REMOVE qualquer absolute/fixed se tiver */
+    }
+
+    /* ────────────────────────────────────────────────
+   AJUSTE ESPECÍFICO PARA ALTURA (1080p)
+──────────────────────────────────────────────── */
+
+    @media (max-height: 1100px) {
+      .hero {
+        padding: 24px 48px 10px;
+      }
+
+      .hero-title {
+        font-size: clamp(48px, 7vw, 100px);
+        line-height: 0.9;
+      }
+
+      .hero-sub {
+        margin-top: 10px;
+      }
+
+      .sliders-area {
+        padding: 16px;
+        gap: 16px;
+      }
+
+      .slider-group {
+        gap: 4px;
+      }
+
+      .sl-val {
+        font-size: 18px;
+      }
+
+      .results-body {
+        grid-template-columns: repeat(4, 1fr);
+      }
+    }
+
+    /* ────────────────────────────────────────────────
+   TELAS MAIS BAIXAS (NOTEBOOKS)
+──────────────────────────────────────────────── */
+
+    /* HERO INTELIGENTE */
+
+    /* Telas médias (notebooks) */
+    @media (max-height: 900px) {
+      .hero {
+        padding: 16px 48px 8px;
+      }
+
+      .hero-title {
+        font-size: clamp(42px, 6vw, 80px);
+        line-height: 0.9;
+      }
+
+      .hero-sub {
+        margin-top: 6px;
+        font-size: 10px;
+      }
+    }
+
+    /* Telas menores ainda */
+    @media (max-height: 780px) {
+      .hero {
+        padding: 12px 48px 4px;
+      }
+
+      .hero-title {
+        font-size: clamp(36px, 5vw, 64px);
+      }
+
+      .hero-sub {
+        display: none;
+      }
+    }
+
+    /* Só remove em último caso */
+    @media (max-height: 680px) {
+      .hero {
+        display: none;
+      }
+
+      .controls-col {
+        margin-top: 0px;
+      }
+    }
+
+    @media (max-height: 900px) {
+
+
+      .content {
+        padding-top: 20px;
+      }
+
+      header {
+        padding: 16px 32px;
+      }
+
+      footer {
+        display: none;
+      }
+    }
+
+    /* ────────────────────────────────────────────────
+   FALLBACK: permitir scroll se necessário
+──────────────────────────────────────────────── */
+
+    @media (max-width: 900px) {
+      .wrapper {
+        height: auto;
+        max-height: none;
+        overflow: visible;
+      }
+    }
+
+    /* ── Tip section ── */
+    .tip-bar {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 11px;
+      color: var(--text-muted);
+      letter-spacing: 0.5px;
+      line-height: 1.5;
+    }
+
+    .tip-icon {
+      font-size: 18px;
+      flex-shrink: 0;
+      opacity: 0.6;
+    }
+
+    /* ── Full results ── */
+    .results-panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      overflow: hidden;
+    }
+
+    .results-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 22px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .results-title {
+      font-size: 10px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    .results-body {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr 1fr;
+    }
+
+    @media (max-width: 700px) {
+      .results-body {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    .res-block {
+      padding: 18px 20px;
+      border-right: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      transition: background 0.15s;
+      position: relative;
+    }
+
+    .res-block:last-child {
+      border-right: none;
+    }
+
+    .res-block:hover {
+      background: var(--surface2);
+    }
+
+    .res-block.active {
+      background: var(--surface2);
+    }
+
+    .res-block.active::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: var(--color);
+      transition: background 0.4s;
+    }
+
+    .res-block-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .res-copy-btn {
+      background: none;
+      border: none;
+      color: var(--text-dim);
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 5px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: color 0.15s, background 0.15s;
+      flex-shrink: 0;
+    }
+
+    .res-copy-btn:hover {
+      color: var(--text-muted);
+      background: var(--surface3);
+    }
+
+    .res-copy-btn.ok {
+      color: #7ab84a;
+    }
+
+    .res-copy-btn svg {
+      display: block;
+    }
+
+    /* Hex copy button UX */
+    .copy-btn {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: rgba(255, 255, 255, 0.7);
+      font-family: var(--font-mono);
+      font-size: 9px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      padding: 5px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.15s;
+      backdrop-filter: blur(10px);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .copy-btn:hover {
+      background: rgba(255, 255, 255, 0.18);
+      color: #fff;
+    }
+
+    .copy-btn.ok {
+      background: rgba(59, 109, 17, 0.3);
+      border-color: rgba(59, 109, 17, 0.6);
+      color: #a8d97f;
+    }
+
+    /* chip copy icon */
+    .chip-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 7px;
+    }
+
+    .chip-copy-btn {
+      background: none;
+      border: none;
+      color: var(--text-dim);
+      cursor: pointer;
+      padding: 2px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      transition: color 0.15s;
+      opacity: 0;
+      pointer-events: none;
+      flex-shrink: 0;
+    }
+
+    .component-chip:hover .chip-copy-btn {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .chip-copy-btn:hover {
+      color: var(--text-muted);
+    }
+
+    .chip-copy-btn.ok {
+      color: #7ab84a;
+      opacity: 1;
+    }
+
+    .res-mode {
+      font-size: 9px;
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+    }
+
+    .res-rows {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .res-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 8px;
+    }
+
+    .res-k {
+      font-size: 10px;
+      color: var(--text-dim);
+      letter-spacing: 1px;
+    }
+
+    .res-v {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text);
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.3px;
+    }
+
+    /* ── Footer ── */
+    footer {
+      padding: 20px 48px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 10px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-top: auto;
+    }
+
+    @media (max-width: 640px) {
+      footer {
+        padding: 16px 24px;
+        flex-direction: column;
+        gap: 6px;
+        text-align: center;
+      }
+    }
+
+    /* ── Animations ── */
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-16px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes fadeUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* ── Color word reveal on load ── */
+    .color-word::after {
+      --clip-right: 0%;
+    }
+
+    /* ────────────────────────────────────────────────
+   MODO ADAPTATIVO (CONTROLADO VIA JS)
+──────────────────────────────────────────────── */
+
+    :root {
+      --scale: 1;
+    }
+
+    /* Escala geral */
+    .wrapper {
+      transform: scale(var(--scale));
+      transform-origin: top center;
+      height: calc(100dvh / var(--scale));
+      overflow: hidden;
+    }
+
+    /* Ajustes finos quando compacto */
+    .compact .hero {
+      padding: 20px 48px 10px;
+    }
+
+    .compact .sliders-area {
+      padding: 16px;
+      gap: 16px;
+    }
+
+    .compact .slider-group {
+      gap: 4px;
+    }
+
+    .compact .sl-val {
+      font-size: 16px;
+    }
+
+    .compact .hero-title {
+      letter-spacing: 1px;
+    }
+
+    /* Ultra compacto */
+    .ultra-compact .hero {
+      display: none;
+    }
+
+    .ultra-compact footer {
+      display: none;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="bg-layer">
+    <div class="bg-orb bg-orb-1" id="orb1"></div>
+    <div class="bg-orb bg-orb-2" id="orb2"></div>
+  </div>
+  <div class="bg-grain"></div>
+
+  <div class="wrapper">
+    <header>
+      <div class="logo-wrap">
+        <div class="logo">CROMATICK</div>
+        <div class="logo-divider"></div>
+        <div class="logo-sub">
+          <span class="logo-sub-top">ferramenta</span>
+          <span class="logo-sub-bottom"><span class="badge-dot" id="badge-dot"></span>conversor de cores</span>
+        </div>
+      </div>
+      <div class="header-right">cromatick &copy; 2025</div>
+    </header>
+
+    <div class="hero">
+      <div class="hero-title">
+        CONVERTA<br />
+        <span class="color-word" data-text="CORES" id="color-word">CORES</span>
+      </div>
+      <div class="hero-sub">em tempo real · 4 espaços de cor</div>
+    </div>
+
+    <div class="content">
+      <!-- LEFT: Preview -->
+      <div class="preview-col">
+        <div class="swatch-container">
+          <div class="swatch-grid"></div>
+          <div class="swatch" id="swatch">
+            <div class="swatch-overlay"></div>
+            <div class="hex-big" id="hex-big">#1D9E75</div>
+            <div class="hex-copy-row">
+              <span class="hex-label-small">hex</span>
+              <button class="copy-btn" id="copy-btn" onclick="copyHex()">
+                <svg width="11" height="11" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect x="5" y="5" width="9" height="9" rx="1.5" stroke="currentColor" stroke-width="1.5" />
+                  <path d="M3 11H2.5A1.5 1.5 0 0 1 1 9.5V2.5A1.5 1.5 0 0 1 2.5 1h7A1.5 1.5 0 0 1 11 2.5V3"
+                    stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                </svg>
+                copiar
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="components-strip" id="chips-strip"></div>
+      </div>
+
+      <!-- RIGHT: Controls -->
+      <div class="controls-col">
+        <div class="mode-row" id="mode-row">
+          <button class="tab active" data-mode="rgb" onclick="switchMode('rgb')">RGB</button>
+          <button class="tab" data-mode="cmyk" onclick="switchMode('cmyk')">CMYK</button>
+          <button class="tab" data-mode="hsl" onclick="switchMode('hsl')">HSL</button>
+          <button class="tab" data-mode="hsv" onclick="switchMode('hsv')">HSV</button>
+        </div>
+
+        <div class="sliders-area" id="sliders-area" data-mode="RGB"></div>
+
+        <div class="tip-bar" id="tip-bar">
+          <span class="tip-icon">◈</span>
+          <span id="tip-text">Arraste os sliders para ajustar a cor. Clique em qualquer sistema de cor para
+            editar.</span>
+        </div>
+
+        <div class="results-panel">
+          <div class="results-header">
+            <span class="results-title">todos os sistemas</span>
+          </div>
+          <div class="results-body" id="results-body"></div>
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      <span>cromatick &copy; 2026</span>
+      <span>desenvolvido por gabrielrmg</span>
+    </footer>
+
+  </div>
+
+  <script>
+    /* ────────────────────────────────────────────────
+       CONFIG
+    ──────────────────────────────────────────────── */
+    const API = '';
+
+    /* API returns floats 0–1 for CMYK, HSL, HSV percentages/degrees */
+    const MODES = {
+      rgb: {
+        path: '/converter/rgb',
+        label: 'RGB',
+        channels: [
+          {
+            key: 'r', name: 'Red', pip: '#e05555', min: 0, max: 255, step: 1, init: 29,
+            tip: 'Canal vermelho (0–255)'
+          },
+          {
+            key: 'g', name: 'Green', pip: '#55c469', min: 0, max: 255, step: 1, init: 158,
+            tip: 'Canal verde (0–255)'
+          },
+          {
+            key: 'b', name: 'Blue', pip: '#5599e0', min: 0, max: 255, step: 1, init: 117,
+            tip: 'Canal azul (0–255)'
+          },
+        ]
+      },
+      cmyk: {
+        path: '/converter/cmyk',
+        label: 'CMYK',
+        channels: [
+          {
+            key: 'c', name: 'Cyan', pip: '#00bcd4', min: 0, max: 1, step: 0.01, init: 0.44,
+            tip: 'Ciano — mistura de cores de impressão (0–1)'
+          },
+          {
+            key: 'm', name: 'Magenta', pip: '#e040fb', min: 0, max: 1, step: 0.01, init: 0.00,
+            tip: 'Magenta — mistura de cores de impressão (0–1)'
+          },
+          {
+            key: 'y', name: 'Yellow', pip: '#ffee58', min: 0, max: 1, step: 0.01, init: 0.26,
+            tip: 'Amarelo — mistura de cores de impressão (0–1)'
+          },
+          {
+            key: 'k', name: 'Key', pip: '#aaa', min: 0, max: 1, step: 0.01, init: 0.38,
+            tip: 'Chave/Preto — profundidade da cor (0–1)'
+          },
+        ]
+      },
+      hsl: {
+        path: '/converter/hsl',
+        label: 'HSL',
+        channels: [
+          {
+            key: 'h', name: 'Hue', pip: '#e8d44d', min: 0, max: 360, step: 0.01, init: 144.86,
+            tip: 'Matiz — posição no espectro de cores (0–360°)'
+          },
+          {
+            key: 's', name: 'Saturation', pip: '#c46ec4', min: 0, max: 1, step: 0.01, init: 0.28,
+            tip: 'Saturação — intensidade da cor (0–1)'
+          },
+          {
+            key: 'l', name: 'Lightness', pip: '#aaa', min: 0, max: 1, step: 0.01, init: 0.48,
+            tip: 'Luminosidade — claro ou escuro (0–1)'
+          },
+        ]
+      },
+      hsv: {
+        path: '/converter/hsv',
+        label: 'HSV',
+        channels: [
+          {
+            key: 'h', name: 'Hue', pip: '#e8d44d', min: 0, max: 360, step: 0.01, init: 144.86,
+            tip: 'Matiz — posição no espectro de cores (0–360°)'
+          },
+          {
+            key: 's', name: 'Saturation', pip: '#c46ec4', min: 0, max: 1, step: 0.01, init: 0.44,
+            tip: 'Saturação — pureza da cor (0–1)'
+          },
+          {
+            key: 'v', name: 'Value', pip: '#9be0a8', min: 0, max: 1, step: 0.01, init: 0.62,
+            tip: 'Valor — brilho da cor (0–1)'
+          },
+        ]
+      }
+    };
+
+    const RESULT_DEFS = [
+      { id: 'rgb', label: 'RGB', keys: ['r', 'g', 'b'], fmt: (k, v) => Math.round(v) },
+      { id: 'cmyk', label: 'CMYK', keys: ['c', 'm', 'y', 'k'], fmt: (k, v) => v.toFixed(2) },
+      { id: 'hsl', label: 'HSL', keys: ['h', 's', 'l'], fmt: (k, v) => k === 'h' ? v.toFixed(2) : v.toFixed(2) },
+      { id: 'hsv', label: 'HSV', keys: ['h', 's', 'v'], fmt: (k, v) => k === 'h' ? v.toFixed(2) : v.toFixed(2) },
+    ];
+
+    /* ────────────────────────────────────────────────
+       STATE
+    ──────────────────────────────────────────────── */
+    let mode = 'rgb';
+    let vals = {};
+    let lastResult = null;
+    let debTimer = null;
+
+
+
+    /* ────────────────────────────────────────────────
+       APPLY COLOR TO UI
+    ──────────────────────────────────────────────── */
+    function applyColor(res) {
+      if (!res || !res.rgb) return;
+      const { r, g, b } = res.rgb;
+      const hex = res.hex.toUpperCase();
+
+      document.getElementById('swatch').style.background = `rgb(${r},${g},${b})`;
+      document.getElementById('hex-big').textContent = hex;
+      document.documentElement.style.setProperty('--r', r);
+      document.documentElement.style.setProperty('--g', g);
+      document.documentElement.style.setProperty('--b', b);
+      document.getElementById('badge-dot').style.background = `rgb(${r},${g},${b})`;
+
+      /* hero color word fill */
+      const cw = document.getElementById('color-word');
+      if (cw) {
+        cw.style.setProperty('--clip-right', '0%');
+        cw.style.color = `rgb(${r},${g},${b})`;
+        cw.style.webkitTextStroke = '0';
+      }
+
+      /* update orbs */
+      document.getElementById('orb1').style.background = `rgb(${r},${g},${b})`;
+      document.getElementById('orb2').style.background = `rgb(${r},${g},${b})`;
+    }
+
+    /* ────────────────────────────────────────────────
+       RESULT CARDS + CHIPS
+    ──────────────────────────────────────────────── */
+    function updateResults(res) {
+      applyColor(res);
+      RESULT_DEFS.forEach(def => {
+        const block = document.getElementById('rb-' + def.id);
+        if (!block) return;
+        const data = res[def.id];
+        def.keys.forEach(k => {
+          const el = block.querySelector('[data-k="' + k + '"]');
+          if (el) el.textContent = data != null ? def.fmt(k, data[k]) : '—';
+        });
+      });
+      updateChips(res);
+    }
+
+    function updateChips(res) {
+      const strip = document.getElementById('chips-strip');
+      strip.querySelectorAll('.component-chip').forEach(chip => {
+        const id = chip.dataset.chipId;
+        const def = RESULT_DEFS.find(d => d.id === id);
+        if (!def) return;
+        const data = res[def.id];
+        const valEl = chip.querySelector('.chip-values');
+        if (valEl && data) {
+          valEl.innerHTML = def.keys.map(k =>
+            `<span class="chip-val-item"><span class="chip-val-key">${k.toUpperCase()} </span>${def.fmt(k, data[k])}</span>`
+          ).join('<span style="color:var(--text-dim);margin:0 3px">·</span>');
+        }
+      });
+    }
+
+    /* ────────────────────────────────────────────────
+       BUILD UI
+    ──────────────────────────────────────────────── */
+    function buildSliders(m) {
+      const area = document.getElementById('sliders-area');
+      area.innerHTML = '';
+      area.dataset.mode = m.toUpperCase();
+      MODES[m].channels.forEach(ch => {
+        const v = vals[ch.key] !== undefined ? vals[ch.key] : ch.init;
+        vals[ch.key] = v;
+
+        const grp = document.createElement('div');
+        grp.className = 'slider-group';
+
+        const pct = ((v - ch.min) / (ch.max - ch.min) * 100).toFixed(2);
+        const trackBg = `linear-gradient(to right, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0.45) ${pct}%, rgba(255,255,255,0.1) ${pct}%, rgba(255,255,255,0.1) 100%)`;
+        const displayVal = ch.max <= 1 ? v.toFixed(2) : Math.round(v);
+
+        grp.innerHTML = `
+          <div class="slider-meta">
+            <div class="sl-label">
+              <div class="sl-color-pip" style="background:${ch.pip}"></div>
+              <span class="sl-name">${ch.name}</span>
+            </div>
+            <span class="sl-val" id="sv-${ch.key}">${displayVal}</span>
+          </div>
+          <div class="sl-range-row">
+            <span class="sl-min">${ch.min}</span>
+            <input type="range" min="${ch.min}" max="${ch.max}" step="${ch.step}" value="${v}"
+              id="sl-${ch.key}" style="background:${trackBg}"/>
+            <span class="sl-max">${ch.max}</span>
+          </div>
+        `;
+        area.appendChild(grp);
+
+        const input = grp.querySelector('input');
+        input.addEventListener('input', e => {
+          const n = parseFloat(e.target.value);
+          vals[ch.key] = n;
+          const displayN = ch.max <= 1 ? n.toFixed(2) : Math.round(n);
+          document.getElementById('sv-' + ch.key).textContent = displayN;
+          const p = ((n - ch.min) / (ch.max - ch.min) * 100).toFixed(2);
+          e.target.style.background = `linear-gradient(to right, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0.45) ${p}%, rgba(255,255,255,0.1) ${p}%, rgba(255,255,255,0.1) 100%)`;
+
+          /* set tip */
+          document.getElementById('tip-text').textContent = ch.tip;
+
+          clearTimeout(debTimer);
+          debTimer = setTimeout(fetchConversion, 420);
+        });
+      });
+    }
+
+    const COPY_ICON = `<svg width="12" height="12" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="5" y="5" width="9" height="9" rx="1.5" stroke="currentColor" stroke-width="1.5"/><path d="M3 11H2.5A1.5 1.5 0 0 1 1 9.5V2.5A1.5 1.5 0 0 1 2.5 1h7A1.5 1.5 0 0 1 11 2.5V3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>`;
+    const CHECK_ICON = `<svg width="12" height="12" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2.5 8.5L6 12L13.5 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+
+    function buildChips() {
+      const strip = document.getElementById('chips-strip');
+      strip.innerHTML = '';
+      RESULT_DEFS.forEach(def => {
+        const chip = document.createElement('div');
+        chip.className = 'component-chip' + (def.id === mode ? ' active' : '');
+        chip.dataset.chipId = def.id;
+        chip.title = 'Editar em ' + def.label;
+        chip.onclick = () => switchMode(def.id);
+        chip.innerHTML = `
+          <div class="chip-header">
+            <span class="chip-mode">${def.label}</span>
+            <button class="chip-copy-btn" id="cchip-${def.id}" title="Copiar ${def.label}">${COPY_ICON}</button>
+          </div>
+          <div class="chip-values">${def.keys.map(k => `<span class="chip-val-item"><span class="chip-val-key">${k.toUpperCase()} </span>—</span>`).join('<span style="color:var(--text-dim);margin:0 3px">·</span>')}</div>
+        `;
+        chip.querySelector('.chip-copy-btn').addEventListener('click', e => {
+          e.stopPropagation();
+          copyBlock(def.id, 'cchip-' + def.id);
+        });
+        strip.appendChild(chip);
+      });
+    }
+
+    function buildResultBlocks() {
+      const body = document.getElementById('results-body');
+      body.innerHTML = '';
+      RESULT_DEFS.forEach(def => {
+        const block = document.createElement('div');
+        block.className = 'res-block' + (def.id === mode ? ' active' : '');
+        block.id = 'rb-' + def.id;
+        const rows = def.keys.map(k => `
+          <div class="res-row">
+            <span class="res-k">${k.toUpperCase()}</span>
+            <span class="res-v" data-k="${k}">—</span>
+          </div>
+        `).join('');
+        block.innerHTML = `
+          <div class="res-block-header">
+            <span class="res-mode">${def.label}</span>
+            <button class="res-copy-btn" id="rcopy-${def.id}">copiar</button>
+          </div>
+          <div class="res-rows">${rows}</div>
+        `;
+        block.querySelector('.res-copy-btn').addEventListener('click', e => {
+          e.stopPropagation();
+          copyBlock(def.id);
+        });
+        block.addEventListener('click', () => switchMode(def.id));
+        body.appendChild(block);
+      });
+    }
+
+    /* ────────────────────────────────────────────────
+       API
+    ──────────────────────────────────────────────── */
+    async function fetchConversion() {
+      const body = {};
+      MODES[mode].channels.forEach(ch => { body[ch.key] = parseFloat(vals[ch.key]); });
+      try {
+        const res = await fetch(API + MODES[mode].path, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+          signal: AbortSignal.timeout(5000)
+        });
+        if (!res.ok) throw new Error(res.status);
+        const data = await res.json();
+        lastResult = data;
+        updateResults(data);
+      } catch (e) {
+        console.error('Erro na API:', e);
+      }
+    }
+
+    /* ────────────────────────────────────────────────
+       MODE SWITCH
+    ──────────────────────────────────────────────── */
+    function switchMode(newMode) {
+      if (newMode === mode) return;
+      if (lastResult && lastResult[newMode]) {
+        vals = {};
+        MODES[newMode].channels.forEach(ch => {
+          vals[ch.key] = lastResult[newMode][ch.key];
+        });
+      } else {
+        vals = {};
+        MODES[newMode].channels.forEach(ch => { vals[ch.key] = ch.init; });
+      }
+      mode = newMode;
+
+      document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.mode === mode));
+      document.querySelectorAll('.res-block').forEach(b => b.classList.toggle('active', b.id === 'rb-' + mode));
+      document.querySelectorAll('.component-chip').forEach(c => c.classList.toggle('active', c.dataset.chipId === mode));
+
+      buildSliders(mode);
+      document.getElementById('sliders-area').dataset.mode = mode.toUpperCase();
+
+      fetchConversion();
+    }
+
+    function copyBlock(id) {
+      if (!lastResult || !lastResult[id]) return;
+      const def = RESULT_DEFS.find(d => d.id === id);
+      const data = lastResult[id];
+      const text = def.keys.map(k => `${k.toUpperCase()}: ${def.fmt(k, data[k])}`).join('  ');
+      navigator.clipboard.writeText(text).then(() => {
+        const btn = document.getElementById('rcopy-' + id);
+        btn.textContent = 'copiado!';
+        btn.classList.add('ok');
+        setTimeout(() => { btn.textContent = 'copiar'; btn.classList.remove('ok'); }, 2000);
+      });
+    }
+
+    function copyHex() {
+      const hex = document.getElementById('hex-big').textContent;
+      navigator.clipboard.writeText(hex).then(() => {
+        const btn = document.getElementById('copy-btn');
+        btn.textContent = 'copiado!';
+        btn.classList.add('ok');
+        setTimeout(() => { btn.textContent = 'copiar'; btn.classList.remove('ok'); }, 2000);
+      });
+    }
+
+    /* ────────────────────────────────────────────────
+       INIT
+    ──────────────────────────────────────────────── */
+    MODES['rgb'].channels.forEach(ch => { vals[ch.key] = ch.init; });
+    buildSliders('rgb');
+    buildChips();
+    buildResultBlocks();
+    fetchConversion();
+
+  </script>
+
+  <script>
+    function applySmartFit() {
+      const wrapper = document.querySelector('.wrapper');
+      const root = document.documentElement;
+
+      // reset
+      root.style.setProperty('--scale', 1);
+      document.body.classList.remove('compact', 'ultra-compact');
+
+      // altura real disponível
+      const vh = window.innerHeight;
+
+      // altura real do conteúdo
+      const contentHeight = wrapper.scrollHeight;
+
+      // se já cabe → não faz nada
+      if (contentHeight <= vh) return;
+
+      // calcula escala necessária
+      let scale = vh / contentHeight;
+
+      // limites seguros
+      if (scale < 0.75) {
+        scale = 0.75;
+        document.body.classList.add('ultra-compact');
+      } else if (scale < 0.92) {
+        document.body.classList.add('compact');
+      }
+
+      root.style.setProperty('--scale', scale);
+    }
+
+    /* Executa ao carregar */
+    window.addEventListener('load', applySmartFit);
+
+    /* Executa ao redimensionar */
+    window.addEventListener('resize', () => {
+      clearTimeout(window.__fitTimer);
+      window.__fitTimer = setTimeout(applySmartFit, 150);
+    });
+  </script>
+</body>
+
+</html>

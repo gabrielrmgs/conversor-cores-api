@@ -1,0 +1,7 @@
+services:
+  web-api:
+    build: .
+    container_name: conversor-cores-api
+    ports:
+      - "7000:7000"
+    restart: always
