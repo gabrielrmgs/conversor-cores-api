@@ -311,12 +311,3 @@ Este projeto está sob a licença MIT.
 Gabriel Sá
 
 ---
-
-Se quiser, posso te gerar também:
-
-* versão com badges (build, versão, licença)
-* README em inglês
-* descrição otimizada pra GitHub (SEO)
-* ou até uma landing page pro projeto
-
-Só falar 👍
